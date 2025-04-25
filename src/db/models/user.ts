@@ -1,0 +1,46 @@
+import mongoose from "mongoose";
+import { Document, Model, model, Schema } from "mongoose";
+
+type User = {
+  name: string;
+  email: string;
+  password: string;
+  role: "admin" | "user";
+  subRole: "teacher" | "student";
+};
+
+const userSchema = new Schema<User & Document>(
+  {
+    name: {
+      type: String,
+      required: true,
+    },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+    password: {
+      type: String,
+      required: true,
+    },
+    role: {
+      type: String,
+      enum: ["admin", "user"],
+      default: "user",
+    },
+    subRole: {
+      type: String,
+      enum: ["teacher", "student"],
+      default: "student",
+    },
+  },
+  { timestamps: true }
+);
+
+const UserModel: Model<User & Document> =
+  mongoose.models.User || model("User", userSchema);
+
+export default UserModel;
+export { userSchema };
+export type { User };
