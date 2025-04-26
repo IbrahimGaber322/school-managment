@@ -1,20 +1,28 @@
 "use client";
-import { signUp } from "@/actions/userActions";
-import type { User } from "@/db/models/user";
+
+import { IUser } from "@/models/User";
 import React from "react";
 
 const SignUp = () => {
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
-    const userData: User = {
+    const userData: IUser = {
       name: formData.get("name") as string,
       email: formData.get("email") as string,
       password: formData.get("password") as string,
       role: formData.get("role") as "admin" | "user",
       subRole: formData.get("subRole") as "teacher" | "student",
+      emailVerified: false,
+      createdAt: new Date(),
     };
-    await signUp(userData);
+    await fetch("/api/auth/signup", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(userData),
+    });
   };
   return (
     <form
