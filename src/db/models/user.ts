@@ -33,6 +33,18 @@ const userSchema = new Schema<User & Document>(
       type: String,
       enum: ["teacher", "student"],
       default: "student",
+      validate: {
+        validator: function (value: string) {
+          if (this.role === "admin" && value !== undefined) {
+            return false;
+          }
+          if (this.role === "user" && !["teacher", "student"].includes(value)) {
+            return false;
+          }
+          return true;
+        },
+        message: "Invalid subRole for the given role",
+      },
     },
   },
   { timestamps: true }
