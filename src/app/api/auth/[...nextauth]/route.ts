@@ -30,7 +30,7 @@ export const authOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        // 1. Basic validation
+        // Basic validation
         if (
           !credentials ||
           typeof credentials.email !== "string" ||
@@ -39,7 +39,7 @@ export const authOptions = {
           throw new Error("Missing email or password");
         }
 
-        // 2. Fetch raw user (with hashed password)
+        // Fetch raw user (with hashed password)
         const rawUser: IUser | null = await userModel.getRawUserByEmail(
           credentials.email
         );
@@ -47,12 +47,7 @@ export const authOptions = {
           throw new Error("Invalid credentials");
         }
 
-        // 3. Check emailVerified
-        if (!rawUser.emailVerified) {
-          throw new Error("Please verify your email before signing in");
-        }
-
-        // 4. Compare password
+        // Compare password
         const isValid = await bcrypt.compare(
           credentials.password,
           rawUser.password
@@ -61,7 +56,12 @@ export const authOptions = {
           throw new Error("Invalid credentials");
         }
 
-        // 5. Return minimal user object for JWT
+        //  Check emailVerified
+        if (!rawUser.emailVerified) {
+          throw new Error("Please verify your email before signing in");
+        }
+
+        // Return minimal user object for JWT
         return {
           id: rawUser._id!.toHexString(),
           email: rawUser.email,
