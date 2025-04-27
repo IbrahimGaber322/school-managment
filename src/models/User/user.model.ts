@@ -1,25 +1,10 @@
-// lib/user.ts
-import bcrypt from "bcrypt";
+// models/User.ts
+"use server";
+import { hashPassword } from "@/lib/crypto";
 import client from "@/lib/mongo";
+import { addUserSchema } from "@/lib/validations";
 import { ObjectId, Collection, MongoError, MongoServerError } from "mongodb";
-
-export type Role = "admin" | "user";
-export type SubRole = "teacher" | "student";
-
-export interface IUser {
-  _id?: ObjectId;
-  email: string;
-  password: string;
-  emailVerified: boolean;
-  createdAt: Date;
-  updatedAt?: Date;
-  name: string;
-  role: Role;
-  subRole?: SubRole;
-}
-
-// Public user view (no password)
-export type User = Omit<IUser, "password">;
+import { AddUser, IUser, User } from "./user.types";
 
 // ———————————————
 // Module‐scope flags for one-time setup
@@ -44,36 +29,6 @@ async function getUsersCollection(): Promise<Collection<IUser>> {
   return coll;
 }
 
-/** Ensures subRole is valid for the given role */
-function validateSubRole(role: Role, subRole?: SubRole): boolean {
-  if (role === "admin" && subRole !== undefined) return false;
-  if (role === "user" && subRole && !["teacher", "student"].includes(subRole))
-    return false;
-  return true;
-}
-
-/** Validates format of an email address */
-export function validateEmail(email: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
-
-/**
- * Validates password strength:
- *  - at least 8 chars
- *  - at least one uppercase letter
- *  - at least one lowercase letter
- *  - at least one digit
- */
-function validatePassword(password: string): boolean {
-  return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/.test(password);
-}
-
-/** Validates name length (2–50 non-whitespace chars) */
-function validateName(name: string): boolean {
-  const trimmed = name.trim();
-  return trimmed.length >= 2 && trimmed.length <= 50;
-}
-
 class UserModel {
   /**
    * Creates a new user.
@@ -83,44 +38,19 @@ class UserModel {
    * - Strips password from returned object
    * Throws an error if email is already in use.
    */
-  async createUser(data: {
-    email: string;
-    password: string;
-    name: string;
-    role?: Role;
-    subRole?: SubRole;
-  }): Promise<User> {
-    const {
-      email,
-      password,
-      name,
-      role = "user",
-      subRole = role === "user" ? "student" : undefined,
-    } = data;
+  async createUser(data: AddUser): Promise<User> {
+    addUserSchema.parse(data); // validate all fields
 
-    if (!validateEmail(email)) {
-      throw new Error("Invalid email format");
-    }
-    if (!validatePassword(password)) {
-      throw new Error(
-        "Password must be at least 8 characters and include uppercase, lowercase, and a number"
-      );
-    }
-    if (!validateName(name)) {
-      throw new Error("Name must be between 2 and 50 characters");
-    }
-    if (!validateSubRole(role, subRole)) {
-      throw new Error("Invalid subRole for the given role");
-    }
+    const { email, password, firstName, lastName, role } = data;
 
-    const hashed = await bcrypt.hash(password, 10);
+    const hashed = await hashPassword(password);
 
     const userDoc: Omit<IUser, "_id"> = {
       email,
       password: hashed,
-      name: name.trim(),
-      role,
-      subRole,
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      role: role,
       emailVerified: false,
       createdAt: new Date(),
     };
@@ -174,21 +104,15 @@ class UserModel {
     id: string,
     update: Partial<Omit<IUser, "createdAt" | "email">> & { password?: string }
   ): Promise<User> {
-    if (update.name !== undefined && !validateName(update.name)) {
-      throw new Error("Name must be between 2 and 50 characters");
+    if (update.firstName !== undefined) {
+      addUserSchema.shape.firstName.parse(update.firstName); // validate name
+    }
+    if (update.lastName !== undefined) {
+      addUserSchema.shape.lastName.parse(update.lastName); // validate name
     }
     if (update.password !== undefined) {
-      if (!validatePassword(update.password)) {
-        throw new Error(
-          "Password must be at least 8 characters and include uppercase, lowercase, and a number"
-        );
-      }
-      update.password = await bcrypt.hash(update.password, 10);
-    }
-    if (update.role && update.subRole !== undefined) {
-      if (!validateSubRole(update.role, update.subRole)) {
-        throw new Error("Invalid subRole for the given role");
-      }
+      addUserSchema.shape.password.parse(update.password); // validate password
+      update.password = await hashPassword(update.password);
     }
 
     const coll = await getUsersCollection();
@@ -198,7 +122,12 @@ class UserModel {
         $set: {
           ...update,
           // ensure trimmed name if updated
-          ...(update.name !== undefined ? { name: update.name.trim() } : {}),
+          ...(update.firstName !== undefined
+            ? { name: update.firstName.trim() }
+            : {}),
+          ...(update.lastName !== undefined
+            ? { name: update.lastName.trim() }
+            : {}),
           updatedAt: new Date(),
         },
       }

@@ -1,30 +1,12 @@
 // app/api/auth/signup/route.ts
 import { NextResponse } from "next/server";
-import tokenModel from "@/models/Token";
-import userModel from "@/models/User";
-import { sendMail } from "@/lib/mail";
+import { signUp } from "@/actions/userActions";
 
 export async function POST(req: Request) {
   try {
-    const { email, password, name } = await req.json();
+    const userData = await req.json();
 
-    // 1. Create the user (unverified)
-    const user = await userModel.createUser({ email, password, name });
-
-    // 2. Generate a 24-hour “verify” token
-    const token = await tokenModel.createToken(
-      user._id!.toHexString(),
-      "verify",
-      24 * 60 * 60 * 1000
-    );
-
-    // 3. Send the verification email
-    const url = `${process.env.NEXTAUTH_URL}/verify-email?token=${token}`;
-    await sendMail(
-      email,
-      "Please verify your email",
-      `<p>Welcome! Please <a href="${url}">click here</a> to verify your email address.</p>`
-    );
+    await signUp(userData);
 
     return NextResponse.json({ ok: true });
   } catch (err: unknown) {

@@ -1,4 +1,4 @@
-// lib/token.ts
+// models/Token.ts
 import { nanoid } from "nanoid";
 import client from "@/lib/mongo";
 import { ObjectId, Collection, MongoError, MongoServerError } from "mongodb";

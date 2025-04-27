@@ -1,4 +1,4 @@
-// lib/course.ts
+// models/Course.ts
 import client from "@/lib/mongo";
 import { ObjectId, Collection } from "mongodb";
 

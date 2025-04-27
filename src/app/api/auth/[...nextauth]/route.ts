@@ -3,10 +3,11 @@ import NextAuth, { Session, SessionStrategy } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { MongoDBAdapter } from "@auth/mongodb-adapter";
 import client from "@/lib/mongo";
-import bcrypt from "bcrypt";
 import { JWT } from "next-auth/jwt";
 
-import userModel, { IUser } from "@/models/User";
+import userModel from "@/models/User/user.model";
+import { IUser } from "@/models/User/user.types";
+import { verifyPassword } from "@/lib/crypto";
 
 declare module "next-auth" {
   interface Session {
@@ -48,7 +49,7 @@ export const authOptions = {
         }
 
         // Compare password
-        const isValid = await bcrypt.compare(
+        const isValid = await verifyPassword(
           credentials.password,
           rawUser.password
         );

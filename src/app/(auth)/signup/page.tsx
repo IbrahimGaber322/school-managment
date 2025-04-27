@@ -1,9 +1,9 @@
 // app/(auth)/signup/page.tsx
 "use client";
 
-import React from "react";
+import React, { useTransition } from "react";
 import { useForm, SubmitHandler } from "react-hook-form";
-import { IUser } from "@/models/User";
+import { UserSignUp } from "@/models/User/user.types";
 import {
   Form,
   FormControl,
@@ -14,45 +14,30 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
-
-interface SignUpFormValues {
-  name: string;
-  email: string;
-  password: string;
-  role: "admin" | "user";
-  subRole: "teacher" | "student";
-}
+import { Loader } from "lucide-react";
+import { signUpSchema } from "@/lib/validations";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 export default function SignupPage() {
-  const form = useForm<SignUpFormValues>({
+  const [isPending, startTransition] = useTransition();
+  const form = useForm<UserSignUp>({
     defaultValues: {
-      name: "",
+      firstName: "",
+      lastName: "",
       email: "",
       password: "",
-      role: "user",
-      subRole: "student",
     },
+    resolver: zodResolver(signUpSchema),
   });
 
-  const onSubmit: SubmitHandler<SignUpFormValues> = async (data) => {
-    const userData: IUser = {
-      ...data,
-      emailVerified: false,
-      createdAt: new Date(),
-    };
-
-    await fetch("/api/auth/signup", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(userData),
+  const onSubmit: SubmitHandler<UserSignUp> = (data) => {
+    startTransition(async () => {
+      await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
     });
   };
 
@@ -65,11 +50,12 @@ export default function SignupPage() {
             className="flex flex-col gap-4"
           >
             <FormField
+              disabled={isPending}
               control={form.control}
-              name="name"
+              name="firstName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Name</FormLabel>
+                  <FormLabel>First Name</FormLabel>
                   <FormControl>
                     <Input placeholder="Your name" {...field} />
                   </FormControl>
@@ -79,6 +65,22 @@ export default function SignupPage() {
             />
 
             <FormField
+              disabled={isPending}
+              control={form.control}
+              name="lastName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Last Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Your name" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              disabled={isPending}
               control={form.control}
               name="email"
               render={({ field }) => (
@@ -97,6 +99,7 @@ export default function SignupPage() {
             />
 
             <FormField
+              disabled={isPending}
               control={form.control}
               name="password"
               render={({ field }) => (
@@ -110,52 +113,8 @@ export default function SignupPage() {
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="role"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Role</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select role" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="user">User</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="subRole"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Sub Role</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select sub-role" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="teacher">Teacher</SelectItem>
-                      <SelectItem value="student">Student</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <Button type="submit" className="mt-4">
-              Sign Up
+            <Button type="submit" disabled={isPending} className="mt-4">
+              {isPending ? <Loader /> : "Sign Up"}
             </Button>
           </form>
         </Form>
