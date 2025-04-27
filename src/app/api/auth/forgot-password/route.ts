@@ -1,15 +1,19 @@
 // app/api/auth/forgot-password/route.ts
 import { NextResponse } from "next/server";
-import userModel, { validateEmail } from "@/models/User";
-import tokenModel from "@/models/Token";
+import userModel from "@/models/User/user.model";
+import tokenModel from "@/models/Token/token.model.ts";
 import { sendMail } from "@/lib/mail";
+import { signUpSchema } from "@/lib/validations";
 
 export async function POST(req: Request) {
   try {
     const { email } = await req.json();
 
     // 1. Basic validation
-    if (typeof email !== "string" || !validateEmail(email)) {
+    if (
+      typeof email !== "string" ||
+      signUpSchema.shape.email.safeParse(email).success === false
+    ) {
       return NextResponse.json(
         { error: "Invalid email address" },
         { status: 400 }

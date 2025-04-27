@@ -1,7 +1,7 @@
 "use server";
 
 import { sendMail } from "@/lib/mail";
-import tokenModel from "@/models/Token";
+import tokenModel from "@/models/Token/token.model.ts";
 import userModel from "@/models/User/user.model";
 import { Role, UserSignUp } from "@/models/User/user.types";
 

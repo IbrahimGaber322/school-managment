@@ -2,17 +2,7 @@
 import { nanoid } from "nanoid";
 import client from "@/lib/mongo";
 import { ObjectId, Collection, MongoError, MongoServerError } from "mongodb";
-
-export type TokenType = "verify" | "reset";
-
-export interface IToken {
-  _id?: ObjectId;
-  token: string;
-  userId: ObjectId;
-  type: TokenType;
-  createdAt: Date;
-  expiresAt: Date;
-}
+import { IToken, TokenType } from "./token.types";
 
 // ———————————————
 // Module‐scope flags
@@ -41,14 +31,6 @@ async function getTokensCollection(): Promise<Collection<IToken>> {
   return coll;
 }
 
-/** Safely turn a hex string into ObjectId or throw */
-function toObjectId(id: string): ObjectId {
-  if (!ObjectId.isValid(id)) {
-    throw new Error(`Invalid ObjectId: ${id}`);
-  }
-  return new ObjectId(id);
-}
-
 class TokenModel {
   /**
    * Generate & store a new token.
@@ -67,7 +49,7 @@ class TokenModel {
     const now = new Date();
     const doc: IToken = {
       token,
-      userId: toObjectId(userId),
+      userId: new ObjectId(userId),
       type,
       createdAt: now,
       expiresAt: new Date(now.getTime() + ttlMs),
@@ -122,7 +104,7 @@ class TokenModel {
   async revokeUserTokens(userId: string, type?: TokenType): Promise<number> {
     const coll = await getTokensCollection();
     const query: Partial<IToken> = {
-      userId: toObjectId(userId),
+      userId: new ObjectId(userId),
     };
     if (type) query.type = type;
     const res = await coll.deleteMany(query);

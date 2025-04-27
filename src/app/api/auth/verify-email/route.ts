@@ -1,7 +1,7 @@
 // app/api/auth/verify-email/route.ts
 import { NextResponse } from "next/server";
-import tokenModel from "@/models/Token";
-import userModel from "@/models/User";
+import tokenModel from "@/models/Token/token.model.ts";
+import userModel from "@/models/User/user.model";
 
 export async function GET(req: Request) {
   try {

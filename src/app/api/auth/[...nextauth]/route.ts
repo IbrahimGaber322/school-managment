@@ -14,6 +14,7 @@ declare module "next-auth" {
     user: {
       id: string;
       email: string;
+      emailVerified?: boolean;
     };
   }
 }
@@ -88,6 +89,7 @@ export const authOptions = {
       session.user = {
         id: token.id as string,
         email: session.user?.email ?? "",
+        emailVerified: session.user?.emailVerified ?? false,
       };
       return session;
     },
